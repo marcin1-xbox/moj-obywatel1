@@ -1,9 +1,8 @@
-name: Budowanie APK z luźnych plików (Wersja Java 17)
+name: Build Android APK
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
@@ -11,43 +10,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Pobranie plików z Twojego nowego repozytorium GitHub
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Instalacja Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-index: '20'
 
-      - name: Instalacja narzędzia Cordova
-        run: npm install -g cordova
+    - name: Install Cordova
+      run: npm install -g cordova
 
-      - name: Tworzenie projektu i kopiowanie luźnych plików gry
-        run: |
-          cordova create my-app com.example.robloxapp "RobloxFanApp"
-          cd my-app
-          cordova platform add android
+    - name: Create Cordova Project
+      run: cordova create my-app com.example.myapp MyApp
 
-      - name: Czyszczenie domyślnych plików Cordovy
-        run: rm -rf my-app/www/*
+    - name: Add Android Platform
+      run: |
+        cd my-app
+        cordova platform add android
 
-      - name: Kopiowanie Twoich plików z repozytorium do folderu www aplikacji
-        run: cp -r ./* www/ 2>/dev/null || true
-        working-directory: my-app
+    - name: Copy Resources to Cordova www
+      run: |
+        # Tworzy folder www, jeśli nie istnieje
+        mkdir -p my-app/www
+        
+        # Kopiuje index.html, zdjęcia i całą zawartość repozytorium do folderu www
+        cp -r * my-app/www/ 2>/dev/null || true
+        
+        # Sprawdza czy plik index.html na pewno tam jest
+        ls -la my-app/www
 
-      - name: NOWA KONFIGURACJA JAVY (Naprawia błąd z Gradle)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
+    - name: Build Android APK
+      run: |
+        cd my-app
+        cordova build android --release
 
-      - name: Kompilacja i sprawdzenie błędów
-        run: cordova build android --debug
-        working-directory: my-app
-
-      - name: Archiwizacja pliku APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-apk
-          path: my-app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
-          
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-release-apk
+        path: my-app/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
