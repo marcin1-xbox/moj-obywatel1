@@ -2,7 +2,9 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -10,48 +12,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-index: '20'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
 
-    - name: Install Cordova
-      run: npm install -g cordova
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
 
-    - name: Create Cordova Project
-      run: cordova create my-app com.example.myapp MyApp
+      - name: Install Cordova
+        run: npm install -g cordova
 
-    - name: Add Android Platform
-      run: |
-        cd my-app
-        cordova platform add android
+      - name: Install Dependencies
+        run: npm install
 
-    - name: Copy Resources to Cordova www
-      run: |
-        # Tworzy folder www, jeśli nie istnieje
-        mkdir -p my-app/www
-        
-        # Kopiuje index.html, zdjęcia i całą zawartość repozytorium do folderu www
-        cp -r * my-app/www/ 2>/dev/null || true
-        
-        # Sprawdza czy plik index.html na pewno tam jest
-        ls -la my-app/www
+      - name: Add Android Platform
+        run: cordova platform add android
 
-    - name: Build Android APK
-      run: |
-        cd my-app
-        cordova build android --release
+      - name: Build Android App (Debug)
+        run: cordova build android --debug
 
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-release-apk
-        path: my-app/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
-        
-      - name: Archiwizacja pliku APK
+      - name: Build Android App (Release)
+        run: cordova build android --release
+
+      - name: Upload APK Artifact (Release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: my-app/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - name: Archwiazacja pliku APK (Debug)
         uses: actions/upload-artifact@v4
         with:
           name: app-apk
