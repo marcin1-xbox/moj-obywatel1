@@ -1,4 +1,4 @@
-name: Budowanie APK z pliku ZIP (Bez Artifact)
+name: Budowanie APK z luźnych plików (Bez ZIP)
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Pobranie kodu z repozytorium
+    # 1. Pobranie plików z Twojego repozytorium GitHub
     - name: Checkout repository
       uses: actions/checkout@v4
 
@@ -21,28 +21,33 @@ jobs:
       with:
         node-version: '18'
 
-    # 3. Instalacja Cordovy (narzędzia do robienia APK)
+    # 3. Instalacja narzędzia Cordova
     - name: Install Cordova
       run: npm install -g cordova
 
-    # 4. Tworzenie projektu Cordova i rozpakowanie Twoich plików
-    # (Upewnij się, że Twój plik nazywa się projekt.zip i jest w głównym folderze)
+    # 4. Tworzenie projektu i kopiowanie luźnych plików
     - name: Prepare Project
       run: |
         cordova create my-app com.example.robloxapp "RobloxFanApp"
         cd my-app
         cordova platform add android
+        
+        # Czyszczenie domyślnych plików Cordovy
         rm -rf www/*
-        unzip ../projekt.zip -d www/
+        
+        # Kopiowanie wszystkich Twoich plików z repozytorium do folderu www aplikacji
+        # Omijamy folder my-app oraz ukryte foldery systemowe GitHuba
+        cp -r ../* www/ 2>/dev/null || true
+        rm -rf www/my-app
 
-    # 5. Konfiguracja Javy potrzebnej do Android SDK
+    # 5. Konfiguracja Javy
     - name: Set up JDK 11
       uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
         java-version: '11'
 
-    # 6. Budowanie pliku APK (Tylko testowa kompilacja)
+    # 6. Kompilacja i sprawdzenie błędów (bez zapisu pliku)
     - name: Build Android APK
       run: |
         cd my-app
